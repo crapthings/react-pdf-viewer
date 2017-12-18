@@ -1,39 +1,27 @@
 import React, { Component } from 'react'
-
 import { AutoSizer, List } from 'react-virtualized'
 
 class Page extends Component {
-  async componentDidMount() {
-    const {
-      pdf,
-      index,
-      pageWidth,
-      pageHeight,
-      scale,
-    } = this.props
-    const page = await pdf.getPage(index + 1)
-    var viewport = page.getViewport(scale)
-    var canvas = this.refs.page
-    var context = canvas.getContext('2d')
+  componentDidMount() {
+    this.renderPDF()
+  }
+
+  renderPDF = async () => {
+    const { pdf, pageNumber, pageWidth, pageHeight, scale, } = this.props
+    const page = await pdf.getPage(pageNumber)
+    const viewport = page.getViewport(scale)
+    const canvas = this.refs.page
+    const context = canvas.getContext('2d')
     canvas.height = viewport.height
     canvas.width = viewport.width
-
-    // Render PDF page into canvas context.
-    var renderContext = {
+    page.render({
       canvasContext: context,
-      viewport: viewport
-    }
-    page.render(renderContext)
+      viewport: viewport,
+    })
   }
 
   render() {
-    const {
-      index,
-      style,
-    } = this.props
-
-    const pageNumber = index + 1
-
+    const { index, style, } = this.props
     return (
       <div className='watermark-layer' key={index} style={style}>
         <canvas ref='page'></canvas>
@@ -42,58 +30,48 @@ class Page extends Component {
   }
 }
 
-export default class Index extends Component {
+export default class PDFViewer extends Component {
   state = {
-    pageWidth: 0,
-    pageHeight: 0,
     pdf: null,
     numPages: 0,
+    pageWidth: 0,
+    pageHeight: 0,
+    scale: 0,
   }
 
   style = {
     minHeight: '100vh',
   }
 
-  fullwidth = async pdf => {
-    const page = await pdf.getPage(1)
-    const { width, height } = page.getViewport(1)
-    const { pdfdiv } = this.refs
-    const pageWidth = pdfdiv.clientWidth
-    const pageHeight = pageWidth * height /  width
-    const scale = pageWidth / width
-    return {
-      pageWidth,
-      pageHeight,
-      scale,
-    }
-  }
-
-  fullheight = async pdf => {
-    const page = await pdf.getPage(1)
-    const { width, height } = page.getViewport(1)
-    const { pdfdiv } = this.refs
-    const pageHeight = pdfdiv.clientHeight
-    const pageWidth = pageHeight * width / height
-    const scale = pageWidth / width
-    return {
-      pageWidth,
-      pageHeight,
-      scale,
-    }
-  }
-
   async componentDidMount() {
     const { file } = this.props
     const pdf = await PDFJS.getDocument(file)
     const { numPages } = pdf
-    const { pageWidth, pageHeight, scale } = await this.fullheight(pdf)
-    this.setState({
-      pdf,
-      numPages,
+    const { pageWidth, pageHeight, scale } = await this.getSize(pdf)
+    this.setState({ pdf, numPages, pageWidth, pageHeight, scale, })
+  }
+
+  getSize = async (pdf, full) => {
+    const page = await pdf.getPage(1)
+    const { width, height } = page.getViewport(1)
+    const { pdfdiv } = this.refs
+    let pageWidth, pageHeight, scale
+
+    if (full) {
+      pageWidth = pdfdiv.clientWidth
+      pageHeight = pageWidth * height /  width
+      scale = pageWidth / width
+    } else {
+      pageHeight = pdfdiv.clientHeight
+      pageWidth = pageHeight * width / height
+      scale = pageWidth / width
+    }
+
+    return {
       pageWidth,
       pageHeight,
       scale,
-    })
+    }
   }
 
   render() {
@@ -104,18 +82,19 @@ export default class Index extends Component {
           style={{ margin: '0 auto' }}
           width={pageWidth}
           height={pageHeight}
-          rowCount={numPages}
           rowHeight={pageHeight}
+          rowCount={numPages}
           rowRenderer={({ index, style, }) => {
             return (
               <Page
-                pdf={pdf}
-                pageWidth={pageWidth}
-                pageHeight={pageHeight}
-                scale={scale}
                 key={index}
                 index={index}
                 style={style}
+                pdf={pdf}
+                pageNumber={index + 1}
+                pageWidth={pageWidth}
+                pageHeight={pageHeight}
+                scale={scale}
               />
             )
           }}
