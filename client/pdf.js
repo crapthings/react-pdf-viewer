@@ -64,6 +64,20 @@ export default class Index extends Component {
     }
   }
 
+  fullheight = async pdf => {
+    const page = await pdf.getPage(1)
+    const { width, height } = page.getViewport(1)
+    const { pdfdiv } = this.refs
+    const pageHeight = pdfdiv.clientHeight
+    const pageWidth = pageHeight * width / height
+    const scale = pageWidth / width
+    return {
+      pageWidth,
+      pageHeight,
+      scale,
+    }
+  }
+
   async componentDidMount() {
     const { file } = this.props
     const pdf = await PDFJS.getDocument(file)
