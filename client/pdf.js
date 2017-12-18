@@ -50,6 +50,10 @@ export default class Index extends Component {
     numPages: 0,
   }
 
+  style = {
+    minHeight: '100vh',
+  }
+
   fullwidth = async pdf => {
     const page = await pdf.getPage(1)
     const { width, height } = page.getViewport(1)
@@ -82,7 +86,7 @@ export default class Index extends Component {
     const { file } = this.props
     const pdf = await PDFJS.getDocument(file)
     const { numPages } = pdf
-    const { pageWidth, pageHeight, scale } = await this.fullwidth(pdf)
+    const { pageWidth, pageHeight, scale } = await this.fullheight(pdf)
     this.setState({
       pdf,
       numPages,
@@ -93,32 +97,28 @@ export default class Index extends Component {
   }
 
   render() {
-    const {
-      pdf,
-      numPages,
-      pageWidth,
-      pageHeight,
-      scale,
-    } = this.state
+    const { pdf, numPages, pageWidth, pageHeight, scale, } = this.state
     return (
-      <div ref='pdfdiv'>
+      <div ref='pdfdiv' style={this.style}>
         <List
+          style={{ margin: '0 auto' }}
           width={pageWidth}
           height={pageHeight}
           rowCount={numPages}
           rowHeight={pageHeight}
-          rowRenderer={({
-            index,
-            style,
-          }) => <Page
-            pdf={pdf}
-            pageWidth={pageWidth}
-            pageHeight={pageHeight}
-            scale={scale}
-            key={index}
-            index={index}
-            style={style}
-          />}
+          rowRenderer={({ index, style, }) => {
+            return (
+              <Page
+                pdf={pdf}
+                pageWidth={pageWidth}
+                pageHeight={pageHeight}
+                scale={scale}
+                key={index}
+                index={index}
+                style={style}
+              />
+            )
+          }}
         />
       </div>
     )
